@@ -11,6 +11,7 @@ using namespace std;
 const string pidOwnFileName = "/Pips/Pid1.p";
 const string pidFileSecondProcess = "/Pips/Pid2.p";
 const string generalPipeName = "/Pips/GeneralPipe.p";
+string generalPath;
 int myPid = 0;
 int anotherProcessPid = 0;
 bool is_number(const std::string& s);
@@ -21,6 +22,9 @@ bool fileExists(const char* file);
 
 void WriteOwnPid(const string &pathPid);
 void WriteToPipe(const string &path, const string &value);
+
+void SendMessage(const string &tempResultOfUserCommand);
+
 int main() {
 chdir("..");
 chdir("..");
@@ -32,34 +36,34 @@ pathOwnPid += pidOwnFileName;
 string pathAnotherProcessPid = get_current_dir_name();
 pathAnotherProcessPid += pidFileSecondProcess ;
 
-string  pathGeneralPath = get_current_dir_name();
-pathGeneralPath += generalPipeName;
+generalPath = get_current_dir_name();
+generalPath += generalPipeName;
 
 myPid = getpid();
 cout<<"My PID is "<< myPid<<endl;
 WriteOwnPid(pathOwnPid);
-
-anotherProcessPid = stoi(ReadFromPipe(pathAnotherProcessPid));
+string  tem = ReadFromPipe(pathAnotherProcessPid);
+anotherProcessPid = stoi(tem);
+cout<< "PID второго процесса = "<<anotherProcessPid<<endl;
 string tempResultOfUserCommand ;
-
+char word[256];
+int resultCode =1;
 while (true){
     int cod = 0;
-    cout<<"\nВведите 1 для отправки сообщения \nВведите 2 для завершения\n ";
-
-    cin >> tempResultOfUserCommand;
+    cout << "\nВведите 1 для отправки сообщения \nВведите 2 для завершения\n ";
+    fgets(word, sizeof(word), stdin);
+    tempResultOfUserCommand.clear();
+    tempResultOfUserCommand = word;
+    tempResultOfUserCommand.erase(std::remove(tempResultOfUserCommand.begin(), tempResultOfUserCommand.end(), '\n'), tempResultOfUserCommand.end());
     if(!is_number(tempResultOfUserCommand)){
         continue;
     }
     cod = stoi(tempResultOfUserCommand);
     switch(cod){
         case 1:
-            cout<<"\n Введеиет сообщение\n";
+            cout<<"\n Введите сообщение\n";
             cin >> tempResultOfUserCommand;
-            if(!fileExists(generalPipeName.c_str())){
-                mkfifo(generalPipeName.c_str(),S_IFIFO);
-                chmod(generalPipeName.c_str(),0666);
-            }
-            WriteToPipe(generalPipeName,tempResultOfUserCommand);
+            SendMessage(tempResultOfUserCommand);
             break;
         case 2:
             exit(0);
@@ -68,9 +72,20 @@ while (true){
             cout<<"Не поддержтиваемы тип";
             break;
     }
+
 }
 return 0;
 }
+
+void SendMessage(const string &tempResultOfUserCommand) {
+    kill(anotherProcessPid,SIGUSR1);
+    if(!fileExists(generalPath.c_str())){
+        mkfifo(generalPath.c_str(),S_IFIFO);
+        chmod(generalPath.c_str(),0666);
+    }
+    WriteToPipe(generalPath,tempResultOfUserCommand);
+}
+
 bool is_number(const std::string& s)
 {
     return !s.empty() && std::find_if(s.begin(),
@@ -102,6 +117,11 @@ void WriteToPipe(const string &path,const string &value) {
 }
 
 void PrepareToRead(int n){
+    cout<< "Start reading.."<<endl;
+    cout<<"Протченно : \n"<<ReadFromPipe(generalPath)<<endl;
+    cout.flush();
+    cout.clear();
+    cin.clear();
 
 }
 void InitSignals() {
@@ -109,7 +129,7 @@ void InitSignals() {
     act.sa_handler = PrepareToRead;
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_NODEFER;
-    sigaction(SIGINT, &act, &outI);
+    sigaction(SIGUSR1, &act, &outI);
 }
 bool fileExists(const char* file) {
     struct stat buf;
