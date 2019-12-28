@@ -69,7 +69,8 @@ int main() {
         switch (cod) {
             case 1:
                 cout << "\n Введите сообщение\n";
-                cin >> tempResultOfUserCommand;
+                fgets(word, sizeof(word), stdin);
+                tempResultOfUserCommand = word;
                 SendMessage(tempResultOfUserCommand);
                 break;
             case 2:
@@ -99,10 +100,13 @@ bool is_number(const std::string &s) {
 
 string ReadFromPipe(const string &path) {
     ifstream fifo{path};
+    string resultLine;
     string line;
-    getline(fifo, line);
+    while (getline(fifo, line)) {
+        resultLine += line;
+    }
     fifo.close();
-    return line;
+    return resultLine;
 }
 
 void WriteOwnPid(const string &pathPid) {

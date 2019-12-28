@@ -61,8 +61,9 @@ while (true){
     cod = stoi(tempResultOfUserCommand);
     switch(cod){
         case 1:
-            cout<<"\n Введите сообщение\n";
-            cin >> tempResultOfUserCommand;
+            cout << "\n Введите сообщение\n";
+            fgets(word, sizeof(word), stdin);
+            tempResultOfUserCommand = word;
             SendMessage(tempResultOfUserCommand);
             break;
         case 2:
@@ -92,11 +93,15 @@ bool is_number(const std::string& s)
                                       s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
 }
 string ReadFromPipe(const string &path){
-    ifstream fifo {path};
+    ifstream fifo{path};
+    string resultLine;
     string line;
-    getline(fifo, line);
+    while (std::getline(fifo, line))
+    {
+        resultLine +=line;
+    }
     fifo.close();
-    return  line;
+    return  resultLine;
 }
 
 void WriteOwnPid(const string &pathPid) {
